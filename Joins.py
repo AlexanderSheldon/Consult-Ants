@@ -36,6 +36,10 @@ for h in hs:
 GDP_df = pd.read_excel("Datasets/US-Monthly-GDP-History-Data-Dec2025.xlsx", sheet_name='Data')
 GDP_df['date'] = pd.to_datetime(GDP_df.iloc[:, 0]).dt.strftime("%Y-%m")
 
+# UNRate
+UN_df = pd.read_csv("Datasets/UNRATE.csv")
+UN_df['date'] = pd.to_datetime(UN_df['observation_date']).dt.strftime("%Y-%m")
+
 """------------------------------------------------------------------------
 Merge Data
 ------------------------------------------------------------------------"""
@@ -49,6 +53,8 @@ for h in hs:
 big_df = big_df.sort_values('date', ascending=True)
 
 big_df = pd.merge(big_df, GDP_df, on='date', how='right')
+
+big_df = pd.merge(big_df, UN_df, on='date', how='right')
 
 print(big_df.head())
 
