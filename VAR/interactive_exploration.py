@@ -20,6 +20,29 @@ from utils import (
 )
 
 
+def create_forecast_with_ci_export(point_forecast, lower_bound, upper_bound):
+    """
+    Combine point forecast and confidence intervals into a single exportable DataFrame.
+    
+    Args:
+        point_forecast: DataFrame with point forecasts
+        lower_bound: DataFrame with lower confidence bounds
+        upper_bound: DataFrame with upper confidence bounds
+    
+    Returns:
+        DataFrame with columns for each variable's point, lower, and upper bounds
+    """
+    combined = pd.DataFrame(index=point_forecast.index)
+    
+    # For each variable (column), create point, lower, upper columns
+    for col in point_forecast.columns:
+        combined[f'{col}_point'] = point_forecast[col]
+        combined[f'{col}_lower'] = lower_bound[col]
+        combined[f'{col}_upper'] = upper_bound[col]
+    
+    return combined
+
+
 def print_menu():
     """Display the interactive menu."""
     print("\n" + "=" * 70)
@@ -28,7 +51,7 @@ def print_menu():
     print("\n1. Load and prepare data")
     print("2. Build VAR model with custom lag selection")
     print("3. View model summary and diagnostics")
-    print("4. Generate 24-month forecast")
+    print("4. Generate custom-length forecast with confidence intervals (exportable to CSV)")
     print("5. Generate multi-horizon forecasts (12, 24, 36 months)")
     print("6. Analyze forecast confidence intervals")
     print("7. Compare economic scenarios")
@@ -98,25 +121,48 @@ def option_3_model_summary(model):
 
 
 def option_4_forecast_24m(model):
-    """Generate 24-month forecast."""
+    """Generate custom-length forecast with confidence intervals."""
     if model is None or model.results is None:
         print("No model fitted. Please build model first (option 2).")
         return None
     
     print("\n" + "-" * 70)
-    forecast = model.forecast(steps=24)
+    print("Custom Forecast with Confidence Intervals")
+    print("-" * 70)
+    
+    # Get custom forecast length
+    steps = input("\nForecast horizon in months (default 24): ").strip()
+    steps = int(steps) if steps else 24
+    
+    # Get confidence level
+    confidence = input("Confidence level (0-1, default 0.95): ").strip()
+    confidence = float(confidence) if confidence else 0.95
+    
+    print(f"\nGenerating {steps}-month forecast with {confidence*100:.0f}% confidence intervals...")
+    
+    # Generate forecast with confidence intervals
+    point_forecast, lower_bound, upper_bound = calculate_forecast_confidence_intervals(
+        model, steps=steps, confidence=confidence
+    )
     
     print("\nForecast Statistics:")
-    print(forecast.describe().to_string())
+    print(point_forecast.describe().to_string())
     
-    save_csv = input("\nSave forecast to CSV? (y/n): ").strip().lower()
+    # Ask to save with confidence intervals
+    save_csv = input("\nSave forecast with confidence intervals to CSV? (y/n): ").strip().lower()
     if save_csv in ['y', 'yes']:
-        filename = input("Filename (default: forecast_24month_custom.csv): ").strip()
-        filename = filename if filename else "forecast_24month_custom.csv"
-        forecast.to_csv(filename)
+        filename = input(f"Filename (default: forecast_{steps}month_ci.csv): ").strip()
+        filename = filename if filename else f"forecast_{steps}month_ci.csv"
+        
+        # Create combined dataframe with point forecasts and confidence intervals
+        combined_forecast = create_forecast_with_ci_export(
+            point_forecast, lower_bound, upper_bound
+        )
+        combined_forecast.to_csv(filename)
         print(f"✓ Saved to {filename}")
+        print(f"\nColumns include point forecasts and {confidence*100:.0f}% confidence intervals")
     
-    return forecast
+    return point_forecast
 
 
 def option_5_multi_horizon(model):
