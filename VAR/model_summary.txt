@@ -11,7 +11,7 @@ MODEL EQUATION:
 Model:                         VAR
 Method:                        OLS
 Date:           Fri, 23, Jan, 2026
-Time:                     21:42:07
+Time:                     22:51:09
 --------------------------------------------------------------------
 No. of Equations:         3.00000    BIC:                   -4.75718
 Nobs:                     137.000    HQIC:                  -4.90901
